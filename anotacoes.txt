@@ -1,0 +1,36 @@
+----- Conexão do banco de dados mysql só funciona com essa versão: -------
+mysql-connector-python==8.0.33
+
+------ script pra troca de telas: ------
+from PyQt5.QtWidgets import QApplication
+from PyQt5 import uic
+import sys
+
+app = QApplication(sys.argv)
+
+# Carregando as 4 telas
+tela1 = uic.loadUi("tela1.ui")
+tela2 = uic.loadUi("tela2.ui")
+tela3 = uic.loadUi("tela3.ui")
+tela4 = uic.loadUi("tela4.ui")
+
+tela1.btn_abrir_tela2.clicked.connect(lambda: mudar_tela(tela1, tela2))
+tela2.btn_abrir_tela3.clicked.connect(lambda: mudar_tela(tela2, tela3))
+tela3.btn_abrir_tela4.clicked.connect(lambda: mudar_tela(tela3, tela4))
+tela4.btn_voltar_tela1.clicked.connect(lambda: mudar_tela(tela4, tela1))
+
+def mudar_tela(atual, proxima):
+    atual.hide()
+    proxima.show()
+
+# Começa exibindo a primeira
+tela1.show()
+sys.exit(app.exec_())
+
+---- script de consulta no PyQt5-mysql: -----
+consulta = "SELECT * FROM Pessoa"
+cursor.execute(consulta)
+resultado_do_banco = cursor.fetchall()
+for linha in resultado_do_banco:
+    print(linha)
+
