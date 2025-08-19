@@ -35,7 +35,7 @@ def mudar_tela_3():
         return
     conn.cur.execute("SELECT Resposta_Correta FROM gabaritos WHERE ID_Questao = %s", (questao_atual_id,))
     resultado = conn.cur.fetchone()
-    tela4.visor.setText("Gabarito: " + resultado[0] if resultado else "Gabarito não encontrado.")
+    tela4.visor.setText(resultado[0] if resultado else "Gabarito não encontrado.")
 
     # Exibe a questão anterior
     if questao_anterior_texto:
