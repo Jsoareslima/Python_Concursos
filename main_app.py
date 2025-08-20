@@ -13,8 +13,8 @@ contagem_questoes_dia = 0  # Nova variável para a contagem
 def mudar_tela_1():
     tela1.hide()
     tela2.show()
-    # A contagem inicial deve ser exibida ao mostrar a tela2
     atualizar_label_contagem()
+    atualizar_todos_os_menus()  # garante menus atualizados ao entrar na tela2
 
 def mudar_tela_2(pDisciplina):
     global questao_atual_id, disciplina_atual
@@ -226,7 +226,6 @@ def adicionar_questao_e_gabarito(disciplina, assunto):
     texto_questao = tela_add.edt_questao.text().strip()
     texto_gabarito = tela_add.edt_gabarito.text().strip()
 
-    # Captura dificuldade pelo radio button
     if tela_add.rdb_F.isChecked():
         dificuldade = "Fácil"
     elif tela_add.rdb_M.isChecked():
@@ -242,14 +241,12 @@ def adicionar_questao_e_gabarito(disciplina, assunto):
         return
 
     try:
-        # Obter IDs correspondentes
         conn.cur.execute("SELECT ID_Disciplina FROM Disciplinas WHERE Nome_Disciplina = %s", (disciplina,))
         id_disciplina = conn.cur.fetchone()[0]
 
         conn.cur.execute("SELECT ID_Assunto FROM Assuntos WHERE Assunto = %s", (assunto,))
         id_assunto = conn.cur.fetchone()[0]
 
-        # Inserir na tabela questoes com dificuldade
         conn.cur.execute("""
             INSERT INTO questoes (Texto_Questao, ID_Disciplina, ID_Assunto, Nivel_Dificuldade)
             VALUES (%s, %s, %s, %s)
@@ -258,7 +255,6 @@ def adicionar_questao_e_gabarito(disciplina, assunto):
 
         id_questao = conn.cur.lastrowid
 
-        # Inserir no gabarito
         conn.cur.execute("""
             INSERT INTO gabaritos (ID_Questao, Resposta_Correta)
             VALUES (%s, %s)
@@ -269,28 +265,28 @@ def adicionar_questao_e_gabarito(disciplina, assunto):
 
         tela_add.edt_questao.setText("")
         tela_add.edt_gabarito.setText("")
+        atualizar_todos_os_menus()  # Atualiza menus após adicionar
 
     except Exception as e:
         conn.cnx.rollback()
         QtWidgets.QMessageBox.critical(tela_add, "Erro", f"Erro ao adicionar: {e}")
 
 def excluirQuestao():
-    vLinhaSelecionada = tela_editar.tabela.currentRow()  # Obtém a linha selecionada
-
+    vLinhaSelecionada = tela_editar.tabela.currentRow()
     if vLinhaSelecionada < 0:
         QtWidgets.QMessageBox.warning(tela_editar, "Aviso", "Selecione uma questão para excluir.")
         return
 
-    vCodigo = tela_editar.tabela.item(vLinhaSelecionada, 0).text()  # Obtém o ID da questão selecionada
+    vCodigo = tela_editar.tabela.item(vLinhaSelecionada, 0).text()
 
     try:
         vCursor = conn.cnx.cursor()
-        vComandoSQL = "DELETE FROM QUESTOES WHERE ID_Questao = %s"
-        vCursor.execute(vComandoSQL, (vCodigo,))
+        vCursor.execute("DELETE FROM QUESTOES WHERE ID_Questao = %s", (vCodigo,))
         conn.cnx.commit()
 
         QtWidgets.QMessageBox.information(tela_editar, "Sucesso", "Questão excluída com sucesso!")
-        ListarQuestoes()  # Atualiza a lista de questões após a exclusão
+        ListarQuestoes()
+        atualizar_todos_os_menus()  # Atualiza menus após exclusão
 
     except Exception as erro:
         QtWidgets.QMessageBox.critical(tela_editar, "Erro", f"Ocorreu um erro ao excluir a questão: {erro}")
@@ -298,14 +294,13 @@ def excluirQuestao():
 def salvar_alteracoes():
     try:
         for row in range(tela_editar.tabela.rowCount()):
-            id_questao = tela_editar.tabela.item(row, 0).text()  # coluna oculta com ID
+            id_questao = tela_editar.tabela.item(row, 0).text()
             disciplina = tela_editar.tabela.item(row, 1).text()
             assunto = tela_editar.tabela.item(row, 2).text()
             texto_questao = tela_editar.tabela.item(row, 3).text()
             resposta_correta = tela_editar.tabela.item(row, 4).text()
-            
+
             if texto_questao:
-                # Atualiza questão
                 conn.cur.execute("""
                     UPDATE questoes
                     SET Texto_Questao = %s,
@@ -315,14 +310,12 @@ def salvar_alteracoes():
                 """, (texto_questao, disciplina, assunto, id_questao))
 
             if resposta_correta:
-                # Atualiza gabarito
                 conn.cur.execute("""
                     UPDATE gabaritos
                     SET Resposta_Correta = %s
                     WHERE ID_Questao = %s
-            """, (resposta_correta, id_questao))
-                
-                #atualiza disciplina
+                """, (resposta_correta, id_questao))
+
                 if disciplina:
                     conn.cur.execute("""
                         UPDATE Disciplinas
@@ -330,7 +323,6 @@ def salvar_alteracoes():
                         WHERE ID_Disciplina = (SELECT ID_Disciplina FROM questoes WHERE ID_Questao = %s)
                     """, (disciplina, id_questao))
 
-                # Atualiza assunto
                 if assunto:
                     conn.cur.execute("""
                         UPDATE Assuntos
@@ -340,6 +332,8 @@ def salvar_alteracoes():
 
         conn.cnx.commit()
         QtWidgets.QMessageBox.information(tela_editar, "Sucesso", "Alterações salvas com sucesso!")
+        atualizar_todos_os_menus()  # Atualiza menus após salvar alterações
+
     except Exception as e:
         conn.cnx.rollback()
         QtWidgets.QMessageBox.critical(tela_editar, "Erro", f"Erro ao salvar alterações: {e}")
@@ -351,11 +345,13 @@ def voltar_para_tela2_da_tela3():
     tela3.hide()
     tela2.show()
     atualizar_label_contagem()
+    atualizar_todos_os_menus()  # Atualiza menus ao voltar
 
 def voltar_para_tela2_da_tela4():
     tela4.hide()
     tela2.show()
     atualizar_label_contagem()
+    atualizar_todos_os_menus()  # Atualiza menus ao voltar
 
 def inserir_assunto():
     novo_assunto = tela_add_assunto.edt_assunto.text().strip()
@@ -433,6 +429,7 @@ def salvar_assuntos_editados():
         conn.cnx.commit()
         QtWidgets.QMessageBox.information(tela_editar_assunto, "Sucesso", "Assuntos atualizados.")
         listar_assuntos()
+        atualizar_todos_os_menus()  # Atualiza menus após salvar edições
     except Exception as e:
         conn.cnx.rollback()
         QtWidgets.QMessageBox.critical(tela_editar_assunto, "Erro", f"Erro ao salvar: {e}")
